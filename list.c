@@ -27,17 +27,27 @@ song_node * insert_front(song_node * n, char * name, char * artist){
 	return head;
 }
 
-song_node * insert_ordered(song_node * n, char * name, char * artist) { 
-	song_node * insert = (song_node *) malloc(sizeof(song_node));
-	strcpy(insert -> name, name);
-	strcpy(insert -> artist, artist);
+int comp_song(song_node * n, char * name, char * artist) {
+	if (!strcmp(artist, n -> artist)) return strcmp(name, n -> name);
+	return strcmp(artist, n -> artist);
+}
 
-	while (strcmp(n->next-> name, name) < 0) {
-		n = n -> next;
+song_node * insert_ordered(song_node * n, char * name, char * artist) { 
+	song_node * temp = n;
+	song_node * end = n;
+	if(!n || comp_song(n, name, artist) < 0) return insert_front(n, name, artist);
+	while (n) {
+	    if (comp_song(n, name, artist) > 0) {
+			end = n;
+			n = n->next;
+		}
+		else {
+			end -> next = insert_front(n, name, artist);
+			return temp;
+		}
 	}
-	insert -> next = n -> next;
-	n -> next = insert;
-	return insert;
+	end -> next = insert_front(n, name, artist);
+	return temp;
 }
 
 song_node * find_song(song_node * n, char * name, char * artist) {
@@ -49,9 +59,11 @@ song_node * find_song(song_node * n, char * name, char * artist) {
 }
 
 song_node * find_song_artist(song_node * n, char * artist) {
-	while (strcmp(artist, n-> artist) && n) {
+	while (n && strcmp(artist, n-> artist)) {
 		n = n -> next;
 	}
+	if (!n) 
+		printf("ARTIST NOT FOUND\n");
 	return n;
 }
 
@@ -80,30 +92,53 @@ song_node * free_list(song_node * n){
 	return n;
 }
 
-int remove_node(song_node * n, char * name, char * artist) {
+
+song_node * remove_node(song_node * n, char * name, char * artist) {
 	song_node * node = find_song(n, name, artist);
+	if(node == n){
+		song_node * hold = n->next;  
+		free(n);
+		return hold;
+	}
 	while (n->next != node) {
 		n = n -> next;
 	}
 	n -> next = node -> next;
-	return 0;
+	return n;
 }
 
 void add_song(song_node * ary[], char * name, char * artist){
-	char letter = name[0];
-	printf("%c aka %d\n", letter, letter);
-	if(!ary[letter-97]){
-		printf("ok\n");
-		ary[letter-97] = (song_node *) malloc(sizeof(song_node));
-		ary[letter-97] = insert_front(0, name, artist);
-		
-	}
-	else{
-		insert_front(ary[letter-97], name, artist);
-	}
-	print_list(ary[letter-97]);
-	br();
+	char letter = artist[0];
+	ary[letter-97] = insert_ordered(ary[letter-97], name, artist);
 } 
+
+void print_letter_list(song_node * ary[], char letter){
+	print_list(ary[letter-97]);
+}
+
+song_node * search_song(song_node * ary[], char * name, char * artist) {
+	char letter = artist[0];
+	song_node * search = ary[letter-97];
+	return find_song(search, name, artist);
+}
+
+song_node * search_artist(song_node * ary[], char * artist) {
+	char letter = artist[0];
+	song_node * search = ary[letter-97];
+	return find_song_artist(search, artist);
+}
+void print_table(song_node * ary[]) {
+	int i = 0;
+	int j = 0;
+	for (; i < 27; i++) {
+		song_node * temp = ary[i];
+		while (temp) {
+			printf("%d: %s by %s\n", j, temp -> name, temp -> artist);
+			temp = temp -> next;
+			j++;
+		}
+	}
+}
 int main(){
 	song_node * table[27];
 	int i = 0;
@@ -114,8 +149,7 @@ int main(){
 	song_node *next = 0;
 	head = insert_front(next, "m", "b");
 	head = insert_front(head, "b", "b");
-	head = insert_front(head, "a", "d");
-	//head = insert_ordered(head, "c", "b");
+	head = insert_front(head, "a", "a");
 	printf("TESTING PRINT_LIST\n");
 	print_list(head);
 	br();
@@ -129,14 +163,30 @@ int main(){
 	print_list(rand_node(head));
 	br();
 	printf("REMOVING NODE\n");
-	remove_node(head, "b", "b");
+	head = remove_node(head, "a", "a");
+	head = remove_node(head, "b", "b");
 	print_list(head); 
 	printf("INSERTING NODE IN ORDER\n");
-	insert_ordered(head, "c", "d");
+	head = insert_ordered(head, "c", "d");
+	head = insert_ordered(head, "a", "e");
 	print_list(head);
-	add_song(table, "abc", "potato");
-	add_song(table, "abc", "potato");
-	//printf("%d\n", head->next->i);
-	print_list(table[0]);
+	br();
+	printf("TESTING TABLE ADD SONG\n");
+	add_song(table, "look what you made me do", "taylor swift");
+	add_song(table, "bad blood", "taylor swift");
+	add_song(table, "closer", "the chainsmokers");
+	add_song(table, "paris", "the chainsmokers");
+	add_song(table, "honest", "the chainsmokers");
+	add_song(table, "hello", "adele");
+	print_table(table);
+	br();
+	printf("TESTING SEARCH BY SONG\n");
+	print_list(search_song(table, "hello", "adele"));
+	br();
+	printf("TESTING SEARCH BY ARTIST\n");
+	print_list(search_artist(table, "the chainsmokers"));
+	br();
+	printf("TESTING PRINT LETTER LIST\n");
+	print_letter_list(table, 't');
 	free_list(head);
 }
